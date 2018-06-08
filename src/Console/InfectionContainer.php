@@ -82,6 +82,10 @@ final class InfectionContainer extends Container
             return sprintf('%s/%s', $this['coverage.path'], CodeCoverageData::PHP_SPEC_COVERAGE_DIR);
         };
 
+        $this['coverage.dir.atoum'] = function () {
+            return sprintf('%s/%s', $this['coverage.path'], CodeCoverageData::ATOUM_COVERAGE_DIR);
+        };
+
         $this['phpunit.junit.file.path'] = function () {
             return sprintf('%s/%s', $this['coverage.path'], PhpUnitAdapter::JUNIT_FILE_NAME);
         };

@@ -11,6 +11,10 @@ namespace Infection\TestFramework;
 
 use Infection\Config\InfectionConfig;
 use Infection\Finder\TestFrameworkFinder;
+use Infection\TestFramework\Atoum\Adapter\AtoumAdapter;
+use Infection\TestFramework\Atoum\CommandLine\ArgumentsAndOptionsBuilder as AtoumArgumentsAndOptionsBuilder;
+use Infection\TestFramework\Atoum\Config\Builder\InitialConfigBuilder as AtoumInitialConfigBuilder;
+use Infection\TestFramework\Atoum\Config\Builder\MutationConfigBuilder as AtoumMutationConfigBuilder;
 use Infection\TestFramework\Config\TestFrameworkConfigLocatorInterface;
 use Infection\TestFramework\PhpSpec\Adapter\PhpSpecAdapter;
 use Infection\TestFramework\PhpSpec\CommandLine\ArgumentsAndOptionsBuilder as PhpSpecArgumentsAndOptionsBuilder;
@@ -83,43 +87,63 @@ final class Factory
 
     public function create(string $adapterName, bool $skipCoverage): AbstractTestFrameworkAdapter
     {
-        if ($adapterName == TestFrameworkTypes::PHPUNIT) {
-            $phpUnitConfigPath = $this->configLocator->locate(TestFrameworkTypes::PHPUNIT);
-            $phpUnitConfigContent = file_get_contents($phpUnitConfigPath);
-
-            return new PhpUnitAdapter(
-                new TestFrameworkFinder(TestFrameworkTypes::PHPUNIT, $this->infectionConfig->getPhpUnitCustomPath()),
-                new InitialConfigBuilder(
-                    $this->tmpDir,
-                    $phpUnitConfigContent,
-                    $this->xmlConfigurationHelper,
-                    $this->jUnitFilePath,
-                    $this->infectionConfig->getSourceDirs(),
-                    $skipCoverage
-                ),
-                new MutationConfigBuilder($this->tmpDir, $phpUnitConfigContent, $this->xmlConfigurationHelper, $this->projectDir),
-                new ArgumentsAndOptionsBuilder(),
-                $this->versionParser
-            );
-        }
-
-        if ($adapterName == TestFrameworkTypes::PHPSPEC) {
-            $phpSpecConfigPath = $this->configLocator->locate(TestFrameworkTypes::PHPSPEC);
-
-            return new PhpSpecAdapter(
-                new TestFrameworkFinder(TestFrameworkTypes::PHPSPEC),
-                new PhpSpecInitialConfigBuilder($this->tmpDir, $phpSpecConfigPath, $skipCoverage),
-                new PhpSpecMutationConfigBuilder($this->tmpDir, $phpSpecConfigPath, $this->projectDir),
-                new PhpSpecArgumentsAndOptionsBuilder(),
-                $this->versionParser
-            );
+        $method = 'create' . ucfirst(strtolower($adapterName));
+        if (method_exists($this, $method)) {
+            return \call_user_func_array([$this, $method], [$skipCoverage]);
         }
 
         throw new \InvalidArgumentException(
             sprintf(
                 'Invalid name of test framework. Available names are: %s',
-                implode(', ', [TestFrameworkTypes::PHPUNIT, TestFrameworkTypes::PHPSPEC])
+                implode(', ', TestFrameworkTypes::TYPES)
             )
+        );
+    }
+
+    private function createPhpunit(bool $skipCoverage): AbstractTestFrameworkAdapter
+    {
+        $phpUnitConfigPath = $this->configLocator->locate(TestFrameworkTypes::PHPUNIT);
+        $phpUnitConfigContent = file_get_contents($phpUnitConfigPath);
+
+        return new PhpUnitAdapter(
+            new TestFrameworkFinder(TestFrameworkTypes::PHPUNIT, $this->infectionConfig->getPhpUnitCustomPath()),
+            new InitialConfigBuilder(
+                $this->tmpDir,
+                $phpUnitConfigContent,
+                $this->xmlConfigurationHelper,
+                $this->jUnitFilePath,
+                $this->infectionConfig->getSourceDirs(),
+                $skipCoverage
+            ),
+            new MutationConfigBuilder($this->tmpDir, $phpUnitConfigContent, $this->xmlConfigurationHelper, $this->projectDir),
+            new ArgumentsAndOptionsBuilder(),
+            $this->versionParser
+        );
+    }
+
+    private function createPhpspec(bool $skipCoverage): AbstractTestFrameworkAdapter
+    {
+        $phpSpecConfigPath = $this->configLocator->locate(TestFrameworkTypes::PHPSPEC);
+
+        return new PhpSpecAdapter(
+            new TestFrameworkFinder(TestFrameworkTypes::PHPSPEC),
+            new PhpSpecInitialConfigBuilder($this->tmpDir, $phpSpecConfigPath, $skipCoverage),
+            new PhpSpecMutationConfigBuilder($this->tmpDir, $phpSpecConfigPath, $this->projectDir),
+            new PhpSpecArgumentsAndOptionsBuilder(),
+            $this->versionParser
+        );
+    }
+
+    private function createAtoum(bool $skipCoverage): AbstractTestFrameworkAdapter
+    {
+        $configPath = $this->configLocator->locate(TestFrameworkTypes::ATOUM);
+
+        return new AtoumAdapter(
+            new TestFrameworkFinder(TestFrameworkTypes::ATOUM),
+            new AtoumInitialConfigBuilder($this->tmpDir, $skipCoverage),
+            new AtoumMutationConfigBuilder($this->tmpDir, $this->projectDir),
+            new AtoumArgumentsAndOptionsBuilder(),
+            $this->versionParser
         );
     }
 }

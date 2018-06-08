@@ -16,9 +16,11 @@ final class TestFrameworkTypes
 {
     const PHPUNIT = 'phpunit';
     const PHPSPEC = 'phpspec';
+    const ATOUM = 'atoum';
 
     const TYPES = [
         self::PHPUNIT,
         self::PHPSPEC,
+        self::ATOUM,
     ];
 }
